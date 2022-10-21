@@ -606,7 +606,7 @@ where deptno = (
                 select deptno         
                 from emp                      
                 where ename = 'SCOTT'           
-               ); -- 서브쿼리문  (서브쿼리가 먼저 실행됨)         
+               ); -- 서브쿼리문             
 
 select deptno,max(sal)
 from emp
@@ -637,43 +637,36 @@ select empno
 from emp
 where ename ='KING');
 
---다중행 서브쿼리 : 결과 값이 하나 이상의 행을 가지는 서브쿼리
--- in : 조건에 일치하는 것만 출력 (=)
--- any : 조건에 하나라도 만족하면 출력 (or)
--- all : 모든 조건이 만족해야 출력    (and)
--- exists : 결과가 존재하면 전체 출력 
+--다중행 서브쿼리
+-- in : 결과 중에 하나만 만족하면 된다.
+-- any : 결과 중에 가장 작은 값보다 크면 된다.
+-- all : 결과 중에 가장 큰 값보다 크면 된다.
 
 
---in (서브 쿼리 결과 중 같은 값이 포함되어 있으면 조회)
---not in (서브 쿼리 결과 중 같은 값이 포함되어 있지 않으면 조회)
+--in (or개념,해당하는 모든 값 조회)
 select * 
 from emp
-where sal in ( -- 5000, 3000, 2850인 모든 사람
+where sal in ( -- 5000 이거나 3000 이거나 2850인 모든 사람
             select max(sal)
             from emp 
             group by deptno -- 결과 = 5000,3000,2850
             );
- --any(some) (조건식이 하나라도 만족하면 조회)
+ --any (부등호 사용!!)
 select * 
 from emp
-where sal > any ( -- >5000 or >3000 or >2850 => 5000보다 크거나, 3000보다 크거나, 2850보다 큰 값
+where sal > any (-- >:가장 작은 값보다 큰 값, <:가장 큰 값보다 작은 값, =: 모든 데이터 사용
              select max(sal)
              from emp 
              group by deptno -- 결과 = 5000,3000,2850
              );
- --all (조건식이 모두 만족하면 조회)
+ --all (얘도 부등호 사용!!)
 SELECT ename,sal
 FROM emp
-where sal > all( --  > 결과값 모두 만족  =>  > 2850(제일큰수) => 2850보다 큰 값
+where sal > all(-- >:가장 큰 값보다 큰 값, <:가장 작은 값보다 작은 값, =: 모든 데이터 사용
            select sal
            from emp
-           where deptno = 30); -- 결과 = 1600,1250,1250,2850,1500,950
+           where deptno = 30);
  
- 
- select sal
-           from emp
-           where deptno = 30;
-             
 select * 
 from emp
 where (deptno,sal) in (
@@ -1013,12 +1006,6 @@ values (null,'김유신','SALESMAN',20);
 
 insert into emp02
 values (null,null,'MANAGER',30);
-
-
-
-
-
-
 
 
 
