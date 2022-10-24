@@ -692,11 +692,11 @@ where (deptno,sal) in (
 -- 컬럼과 값의 타입과 갯수가 일치해야한다.
 -- 작성 순서대로 1:1 매칭된다.
 
-create table dept_temp -- 해당 컬럼(dept) 형식을 복사하여 테이블(dept_temp) 만들기
+create table dept_temp 
 as
 select * from dept; 
  
-select * from dept_temp;
+select * from dept_temp; -- 해당 컬럼(dept) 형식을 복사하여 테이블(dept_temp) 만들기!!
  
 --데이터 삽입 유형
 insert into dept_temp (deptno,dname,loc) 
@@ -762,7 +762,7 @@ select * from emp_temp2;
 
 delete from  emp_temp2;
 
-delete from  emp_temp2
+delete from  emp_temp2 --(데이터 삭제)
 where ename = 'SCOTT';
 
 ================================================================================================================
@@ -854,7 +854,7 @@ select * from emp;
 select * from emp_alter;
 
 alter table emp_alter
-add address varchar(100); -- 컬럼 추가
+add address varchar2(100); -- 컬럼 추가
 
 alter table emp_alter
 rename column address to addr; -- 컬럼이름 변경
@@ -879,8 +879,8 @@ select * from emp_alter;
 --Q1
 create table emp_hw(
 empno number(4),
-ename varchar(10),
-job varchar(9),
+ename varchar2(10),
+job varchar2(9),
 mgr number(4),
 hiredate date,
 sal number(7,2),
@@ -896,7 +896,7 @@ SELECT * FROM emp_hw;
 
 --Q3
 alter table emp_hw
-modify bigo varchar(30);
+modify bigo varchar2(30);
 desc emp_hw;
 
 --Q4
@@ -921,15 +921,15 @@ desc user_tables;
 select table_name
 from user_tables;
 
-select owner,table_name
-from all_tables;
+select owner,table_name   -- 남이 위임한 테이블도 확인가능
+from all_tables; 
 
 
 -- index (검색속도를 향상하기 위해 사용하는 객체)
 -- create , drop
 -- select 구문의 검색속도를 향상 시킨다
 -- 전체 레코드의 3%~5% 정도일때
--- index객체를 컬럼에 생성해서 사용한다.
+-- index 객체를 컬럼에 생성해서 사용한다.
 
 create index 인덱스명
 on 테이블명(컬럼명);
@@ -975,14 +975,20 @@ purge recyclebin; -- (휴지통 비우기 명령어)
 
 ================================================================================================================
 
--- 제약조건(무결성) : 잘못된 데이터로 사용되는 것을 못하게 하는 것 
+-- 제약조건(무결성) : 잘못된 데이터로 사용되는 것을 못하게 하는 것  (테이블의 컬럼절에 삽입)
+
 -- not null : null 데이터를 삽입할 수 없게 한다 
 -- unique : 같은 컬럼에 같은 데이터를 받을 수 없게 한다. but. null은 중복 허용 (ex-사번, 주민번호)
 -- primary key(기본키) : = (not null + unique)
--- foreign key
--- check
+-- foreign key (외래키 / 참조키) : 두 테이블을 함께 쓸 때 연결하는 키(부모 테이블을 참조)
+--      1.부모와 자식의 관계를 가지는 자식쪽 테이블의 컬럼에 설정한다.
+--      2.부모쪽 테이블의 컬럼은 반드시 primary key 또는 unique해야 한다.
+--      3.외래키 값은 NULL이거나 부모 테이블의 기본키 값과 동일해야한다.(부모컬럼에 있는 내용만 자식컬럼에 들어올 수 있다. BUT null은 허용)  
+-- check : 컬럼 값에 제한범위를 부여
+-- default : 기본값 부여
 
--- emp,dept
+
+-- not null, unique, primary key
 insert into emp
 values (1111,'aaa','MANAGER',9999,sysdate,1000,NULL,50);
 --무결성 제약조건(SCOTT.FK_DEPTNO)이 위배되었습니다- 부모 키가 없습니다
@@ -1014,15 +1020,290 @@ values (null,'김유신','SALESMAN',20);
 insert into emp02
 values (null,null,'MANAGER',30);
 
+--foreign key
+create table dept07( -- 부모테이블
+        deptno number(2)constraint dept07_deptno_pk primary key, --부모 테이블엔 primary key(or unique)가 존재해야됨
+        dname varchar2(20)constraint dept07_dname_nn not null,
+        loc varchar2(20)constraint dept07_loc_nn not null
+);  -- 부모 테이블 먼저 생성
+SELECT * FROM dept07;
+
+create table emp07( -- 자식테이블 foreign key한 제약조건
+   empno number(4) constraint emp07_ename_pk primary key,
+   ename varchar2(9)constraint emp07_ename_nn not null,
+   job varchar2(9),                        -- ┌ 컬럼 레벨에서는 foreign key 문구 생략가능(references만 쓴다)
+   deptno number(2) constraint emp07_ename_fk references dept07(deptno)--참조할 부모 테이블
+); -- 자식 테이블(references)에 foreign key가 존재
+SELECT * FROM emp07;
+
+-- 서브쿼리문을 사용한 데이터 삽입
+insert into dept07
+select * from dept; -- 부모 테이블 먼저 삽입
+
+insert into emp07
+select empno,ename,job,deptno from emp;
+
+insert into emp07
+values (1111,'aaa','MANAGER',9999,sysdate,1000,null,50);
+
+-- check
+create table emp08( 
+   empno number(4) constraint emp08_ename_pk primary key,
+   ename varchar2(10)constraint emp08_ename_nn not null,
+   sal number(7)constraint emp08_sal_ck check(sal between 500 and 5000),
+   gender varchar2(2)constraint emp08_gender_ck check(gender in ('M' , 'F'))
+); 
+SELECT * FROM emp08;
+
+insert into emp08
+values (1111,'hong',1000,'M');
+
+insert into emp08
+values (2222,'hong',200,'M');
+
+insert into emp08
+values (3333,'hong',1000,'A');
+
+-- default
+create table dept08( 
+   deptno number(2) primary key,
+   dname varchar2(10) not null,
+   loc varchar2(15) default 'SEOUL'
+); 
+SELECT * FROM dept08;
+
+insert into dept08(deptno,dname)
+values (10,'SALES');
+
+insert into dept08(deptno,dname,loc) -- default 'SEOUL'이라는 기본값을 부여했더라도 
+values (20,'SALES','BUSAN');         -- 다른 값 삽입 시 삽입한 값으로 전환된다.
+
+-- 제약조건 설정방식
+ -- 컬럼 레벨의 설정(not null은 컬럼 레벨에서만 가능)
+ -- 테이블 레벨의 설정(not null을 적용할 수 없다) : 테이블을 정의한 후 나중에 제약조건을 정의
+ 
+ create table emp09(
+    empno number(4),
+    ename varchar2(20)constraint emp09_ename_nn not null,
+    job varchar2(20),
+    deptno number(20), -- 마지막 컬럼 뒤에도 (,)를 찍어야됨
+    
+    constraint emp09_empno_pk primary key(empno),
+    constraint emp09_job_uk unique(job),
+    constraint emp09_deptno_fk foreign key(deptno) references dept(deptno)
+  --└ CONSTRAINT [CONSTRAINT_NAME] FOREIGN KEY (자식 테이블 컬럼 명) REFERENCES 참조테이블(부모 테이블 기본키명)
+ ); 
+SELECT * FROM emp09;
+
+insert into emp09
+values (3333,'hong','PRESIDENT',80);
+
+-- 복합키 (기본키를 두개의 컬럼에 사용하는 경우)
+-- 테이블 레벨 방식으로만 적용 가능
+--   1.테이블 안에서 정의하는 방식
+--   2.Alter 명령어를 사용하는 방식
+
+-- (1)
+create table member(
+   name varchar2(10),
+   address varchar2(30),
+   hphone varchar2(10),
+   
+   constraint member_name_address_pk primary key(name,address)
+);
+-- (2)   
+create table emp10(
+    empno number(4),
+    ename varchar2(20),
+    job varchar2(20),
+    deptno number(20)
+);
+
+alter table emp10
+add constraint emp10_empno_pk primary key(empno);
+
+alter table emp10
+add constraint emp10_empno_fk foreign key(deptno)references dept(deptno);
+  
+-- not null은 변경의 개념( null -> not null), (add x , modify o)
+alter table emp10
+modify job constraint emp10_job_nn not null;  
+    -- └ not null은 예외적으로 컬럼명을 앞에 둔다
+    
+alter table emp10
+modify empno constraint emp10_empno_nn not null;      
+    
+-- drop 제약조건명(constraint) 또는 제약조건(primary key)
+--        └중복 안됨                └중복 됨
+alter table emp10    
+drop constraint emp10_empno_pk;
+
+drop table dept11;
+create table dept11( 
+   deptno number(2),
+   dname varchar2(10),
+   loc varchar2(15)
+);
+SELECT * FROM dept11;
+
+alter table dept11    
+add constraint dept11_deptno_pk primary key(deptno);
+
+drop table emp11;
+create table emp11(
+    empno number(4),
+    ename varchar2(20),
+    job varchar2(20),
+    deptno number(20)
+);
+SELECT * FROM emp11;
+
+alter table emp11    
+add constraint emp11_empno_pk primary key(empno);
+
+alter table emp11
+add constraint emp11_empno_fk foreign key(deptno)references dept11(deptno);
+
+insert into dept11
+select * from dept;
+
+insert into emp11
+select empno,ename,job,deptno
+from emp;
+
+delete from dept11
+where deptno = 10;  -- foreign key로 참조되고 있는 자식 테이블이 있을 경우
+                    -- 부모 테이블의 데이터를 지울 수 없다.
+alter table dept11
+disable primary key cascade;    -- primary key 비활성화 = 연결된 자식테이블(foreign key)도 비활성화 
+--└ 비활성화          └층진구조  -- 제약조건이 비활성화되었으므로 데이터 삭제가 가능해짐. 
+
+alter table dept11
+drop primary key; -- 위의 절차 후 데이터를 지울 수는 있지만 참조되어있는 제약조건을 제거 할 수 없음(비활성화만 시킨 상태임)
+
+alter table dept11
+drop primary key cascade;  -- 참조로 연결된 제약조건들을(dept11 - primary key , emp11 - foreign key) 모두 지워서 제약조건을 지움
+
+--p.395
+--Q1
+drop table DEPT_CONST;
+create table DEPT_CONST(
+      deptno number(2),
+      dname varchar2(14),
+      loc varchar2(13) constraint DEPTCONST_loc_nn not null,
+      
+     constraint DEPTCONST_deptno_pk primary key(deptno),
+     constraint DEPTCONST_dname_unq unique(loc)
+); 
+
+drop table EMP_CONST;
+create table EMP_CONST(
+      empno number(4),
+      ename varchar2(10),
+      job varchar2(9),
+      tel varchar2(20),
+      hiredate date,
+      sal number(7,2),
+      comm number(7,2),
+      deptno number(2)     
+); 
+
+alter table EMP_CONST
+add constraint EMPCONST_empno_pk primary key(empno);
+
+alter table EMP_CONST
+modify ename constraint EMPCONST_ename_nn not null;
+
+alter table EMP_CONST
+add constraint EMPCONST_tel_unq unique(tel);
+
+alter table EMP_CONST
+add constraint EMPCONST_sal_ck check(sal between 1000 and 9999);
+
+alter table EMP_CONST
+add constraint EMPCONST_deptno_fk foreign key(deptno)references DEPT_CONST(deptno);
+
+================================================================================================================
+
+--CRUD (목적:데이터의 변경)
+-- C (create) = insert, DML
+-- R (read) = select,  DQL
+-- U (update), DML
+-- D (delete), DML
+
+-- 객체: table, index, view = create 명령어를 사용하여 만들어서 사용
+
+--뷰(view) : 보기 위한 목적(컬럽을 선택하여 보기 위해)
+ --1.보안
+ --2.범위(변경불가)
+
+-- create or replace view 뷰테이블명(alias)
+-- as
+-- 서브쿼리(select) ┌ 단순뷰(테이블1개)
+--                 └ 복합뷰(ex-조인,...)
+-- [with check option] (필수x)
+-- [with read only]    (필수x)
+
+drop table detp_copy;
+create table detp_copy
+as
+select * from dept;
+
+drop table emp_copy;
+create table emp_copy -- 복사되어 생성된 테이블은 제약조건은 안 넘어온다.
+as
+select * from emp;
+
+create or replace view emp_view30
+as
+select empno, ename, sal, deptno from emp_copy
+where deptno = 30;
+
+grant create view -- [view 테이블을 생성할 수 있는 권한부여(system 계정에서 실행)]
+to scott;
+
+select * from emp_copy; -- 14
+select * from emp_view30; -- 6
+
+insert into emp_view30  -- 뷰테이블에 삽입을 하지만 실제 원본테이블에 삽입됨(나머지 컬럼엔 값이 null로 삽입됨)
+values(1111,'hong',1000,30); 
+
+alter table emp_copy -- 원본테이블을 foreign key로 제약 걸어준다
+add constraint emp_copy_deptno_fk foreign key(deptno) references dept(deptno);
+
+insert into emp_view30( empno, ename, sal) -- foreign key로 제약되는 중 
+values(2222,'hong',2000);  -- deptno의 값 = null, 따라서 삽입 가능!
+ 
+insert into emp_view30( empno, ename, sal, deptno) -- foreign key로 제약되는 중 (deptno = 10,20,30 and null)
+values(2222,'hong',2000,50); -- deptno의 값 = 50, 값이 원본 테이블의 범위가 아니기 때문에 제약에 의해 오류가 발생!
+
+ create or replace view emp_view(사원번호, 사원명, 급여, 부서번호) -- 뷰 테이블에서 컬럼에 별칭부여(alias)
+ as
+ select empno,ename,sal,deptno
+ from emp_copy;
+ 
+select * from emp_view
+where 부서번호 = 20;
+--where deptno = 20; -> error 별칭 부여하면 원래의 컬럼명을 사용할 수 없다.
 
 
+create or replace view emp_dept_view
+as
+select empno,ename,sal,e.deptno,dname,loc
+from emp e inner join dept d
+on e.deptno = d.deptno
+order by empno desc;
 
+select * from emp_dept_view;
 
-
-
-
-
-
-
-
+--Q 부서별 최소급여와 최대급여
+--   dname,min_sal,max_sal
+create or replace view sal_view --(dname,min_sal,max_sal) as를 써도됨
+as
+select dname,min(sal)as min_sal,max(sal) as max_sal
+from emp e inner join dept d
+on e.deptno = d.deptno
+group by d.dname;
+ 
+select * from sal_view;
 
