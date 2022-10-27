@@ -377,8 +377,9 @@ select sum(sal) from emp;
 
 select avg(sal) from emp;               
                  
-select count(*), count(comm)
-from emp; -- count()테이블에 존재하는 전체 레코드(컬럼)의 갯수(but,컬럼을 변수로 넣을 시 실제 데이터가 있는 컬럼만 구해준다)  
+select count(*), count(comm)  -- count(*) : 테이블에 존재하는 전체 컬럼의 갯수
+    from emp;                 -- count(컬럼): 컬럼을 변수로 넣을 시 그 컬럼에서 실제 데이터가 있는 행의 갯수를 구해준다  
+                              --             (데이터 값이 null인 행을 제외)  
  
 select max(sal),min(sal) from emp; -- 여러 함수를 동시에 실행할 수 있다         
                  
@@ -407,9 +408,8 @@ select avg(sal) from emp where deptno = 30;
 
 select avg(sal) from emp group by deptno; -- 값이 3개
 select deptno from emp group by deptno;  -- 값이 3개
-
-select deptno,avg(sal) from emp group by deptno; -- 컬럼의 레코드(값) 갯수가 같으면 같이 쓸 수 있다.
-                                                 -- 그렇기때문에 group by 뒤의 컬럼은 함수와 같이 쓸 수 있다.
+select deptno,avg(sal) from emp group by deptno; -- 컬럼의 레코드(데이터) 갯수가 같으면
+                                                 -- group by 뒤의 일반 컬럼은 단일화 함수와 같이 쓸 수 있다.
 select deptno,avg(sal) 
 from emp 
 group by deptno
@@ -522,9 +522,14 @@ select empno,ename,sal,grade
 from emp e inner join salgrade s
 on e.sal between s.losal and s.hisal;
 
-select e.empno, e.ename, e.mgr, m.ename
-from emp e left outer join emp m -- 데이터가 있는 쪽을 지정한다.
-on e.mgr = m.empno;
+select e.empno, e.ename, e.mgr, m.ename -- 해당 쪽의 데이터 + 교집합데이터
+from emp e left outer join emp m  
+on e.mgr = m.empno;          
+
+/*outer join
+기준 데이터에 중복이나 null이 있는 것은 레코드 갯수에 무관
+조인 데이터에 중복이 있을 시 레코드 뻥튀기
+조인 데이터에 null이 있거나 고유번호일 때 레코드값 동일*/ -- 참고만...내가 정의한 거 확실하지는 않음
 
 select empno, ename, sal,d.deptno, dname, grade
 from emp e inner join dept d
@@ -539,12 +544,12 @@ on e.sal between s.losal and hisal;
 
 --(1)
 select ename, sal, deptno
-from emp e right outer join dept d
+from emp e left outer join dept d
 using(deptno);
 --(2)
 select ename, sal, d.deptno
 from emp e right outer join dept d
-on e.deptno = d.deptno;
+on e.deptno = d.deptno;   -- 데이터가 있는 쪽을 지정한다.
 
 --p.239
 --Q1
@@ -1465,7 +1470,7 @@ values (emp_seq.nextval,'hong',sysdate);
 
 drop table product;
 create table product(
-   pid varchar(10),
+   pid varchar2(10),
    pname varchar2(10),
    price number(5)
    
@@ -1677,11 +1682,11 @@ end;
 -----------------------------------------------------
 declare
     -- vempno number(4);  -- 변수의 선언
-    -- vename varchar(10);
+    -- vename varchar2(10);
     
     -- 선언과 초기화 한번에
     vempno constant number(4) := 7777; -- 상수의 정의(constant)
-    vename varchar(10) not null := 'SCOTT';  -- null 값을 변수로 사용할 수 없다. 
+    vename varchar2(10) not null := 'SCOTT';  -- null 값을 변수로 사용할 수 없다. 
 begin 
    -- vempno := 7777;   -- 변수의 초기화 (:= 대입연산자)
    -- vempno := 'SCOTT'; 
@@ -1738,7 +1743,7 @@ end;
 declare
    -- 테이블 type(사용자 정의 변수의 타입)
    -- 배열의 형식
-   -- vempno varchar(10)
+   -- vempno varchar2(10)
    
    type ename_table_type is table of emp.ename%type
    index by binary_integer;
@@ -1911,7 +1916,7 @@ end;
 
 
 declare
-   -- %ROWTYPE : 테이블의 모든 컬럼의 이름과 변수를 참조하겠다.
+   -- %ROWTYPE : 테이블의 모든 컬럼의 이름과 타입을 참조하겠다.
    -- 컬럼명이 변수명으로 사용되고 컬럼의 타입을 변수의 타입으로 사용한다.
    
    vemp emp%rowtype;
@@ -2071,14 +2076,14 @@ end;
 /
 -----------------------------------------------------
 
---최종절리
+--최종정리
 
 /*
 select empno, ename,.... => [변수에 적용할 컬럼(타입)]   ┬ 둘의 수와 타입은 같아야 됨
 into vempno, vename,...  => [변수들(이름은 재량으로 설정)]┘
 from emp                 => [변수에 적용시킬 컬럼(타입)을 가져올 테이블]
   
---%ROWTYPE: 테이블의 모든 컬럼의 이름과 변수를 참조하겠다.
+--%ROWTYPE: 테이블의 모든 컬럼의 이름과 타입을 참조하겠다.
 declare에 [vemp emp%rowtype;] - 변수를 선언
 
 select *   => [모든 컬럼 참조]   
@@ -2086,8 +2091,8 @@ into vemp  => [해당 테이블의 모든 컬럼 참조를 위한 변수(이름은 재량으로 설정)]
 from emp   => [변수에 적용시킬 컬럼을 가져올 테이블] 
 */
 
--- 스칼라 방식
--- 레퍼런스 방식
+-- 스칼라 방식 : 변수명, 타입 둘 다 지정
+-- 레퍼런스 방식 : 변수명은 지정하고 타입은 참조
 --  1. emp.empno%type
 --  2. emp%rowtype
 
@@ -2104,3 +2109,349 @@ from emp   => [변수에 적용시킬 컬럼을 가져올 테이블]
 -- loop end loop;
 -- for in loop end loop;
 -- while loop end loop;
+-----------------------------------------------------
+
+-- 저장 프로시져
+-- 1.생성(create)
+-- 2.실행(execute or exe)
+
+/*   create or replace procedure 프로시져명(매개변수)
+
+     is(or as)
+         변수 정의
+     begin
+         SQL
+         출력구문
+         조건문, 반복문
+     end;
+     /
+*/
+drop table emp01;
+
+create table emp01
+as
+select * from emp;
+
+set serveroutput on;  -- 출력을 위해 실행(출력이 안 될 때마다 해줘야됨)
+
+create or replace procedure emp01_print  -- 생성단계
+is
+   vempno number(10);
+   vename varchar2(10);
+begin
+   vempno := 1111;
+   vename := 'Hong';
+   
+   dbms_output.put_line(vempno||' '||vename);
+end;
+/
+
+execute emp01_print;  
+
+exec emp01_print;
+
+create or replace procedure emp01_del -- 삭제를 위한 procedure 생성
+is
+begin
+  delete from emp01;
+end;
+/
+
+exec emp01_del; 
+-- 전체 데이터 삭제를 위한 procedure 실행
+
+select * from emp01;
+
+
+--매개변수 이용(특정 데이터 삭제)                ┌in(기본값이라서 생략) 
+create or replace procedure del_ename(vename emp01.ename%type) -- 이름을 통해 특정 사원 삭제
+is
+   
+begin
+   delete from emp01
+   where ename = vename;
+end;
+/
+
+exec del_ename('SCOTT');
+
+select * from emp01
+where ename = 'SCOTT';
+
+exec del_ename('SMITH');
+
+select * from emp01;
+--where ename = 'SMITH';
+
+--저장 프로시져의 매개변수 유형
+-- in, out, in out
+-- in : 값을 전달받는 용도
+-- out : 프로시져 내부의 실행 결과를 실행할 쪽으로 전달
+-- in out : in + out
+
+-- 사번을 통해서 특정 사원 조회
+create or replace procedure sel_empno 
+( 
+   vempno in emp.empno%type,
+   vename out emp.ename%type,
+   vsal out emp.sal%type,
+   vjob out emp.job%type
+)
+as
+
+begin
+   select ename, sal, job
+   into vename, vsal, vjob
+   from emp
+   where empno = vempno;
+end;
+/
+
+-- 바인드 변수 말들기 (주석을 포함시키면 가끔 실행 안됨 => 실행문구만 드래그해서 실행하기)
+variable var_ename varchar2(15);
+variable var_sal number; -- 바인드 변수 지정 시 넘버는 타입만 지정 (크기 지정x)
+variable var_job varchar2(9);    
+
+--실행              in         out          out         out
+exec sel_empno(입력하는 값, :바인드 변수1, :바인드 변수2, :바인드 변수3);
+                     --   └ (:)앞에 붙여주기
+exec sel_empno(7499, :var_ename, :var_sal, :var_job);
+
+print var_name;
+print var_sal;
+print var_job;
+
+--Q 사원 정보를 저장하는 저장 프로시져 만드세요
+-- 사번,이름,직책,매니져,부서
+-- 사원 정보는 매개변수를 사용해서 받아온다.
+drop table emp02;
+
+create table emp02
+as
+select empno,ename, job, mgr, deptno
+from emp
+where 1 != 1; -- 테이블의 데이터는 가져오지 않음(false)
+
+create or replace procedure emp02_save
+(
+   vempno emp02.empno%type,
+   vename emp02.ename%type,
+   vjob emp02.job%type,
+   vmgr emp02.mgr%type,
+   vdeptno emp02.deptno%type
+)
+is
+begin
+  insert into emp02(empno,ename, job, mgr, deptno)
+  values( vempno, vename, vjob, vmgr, vdeptno);
+  
+end;
+/
+
+exec emp02_save (9999,'hong','MANAGER',9998,20); 
+exec emp02_save (1111,'NANG','MANAGER',1112,10);
+
+select empno,ename, job, mgr, deptno
+from emp02;
+
+
+-- 저장 함수
+-- 저장함수와 저장 프로시져의 차이점: return값 유무
+-- 1.생성(create)
+-- 2.실행(execute)
+/*
+create or replace procedure 함수명(매개변수)
+    return 값의 타입  -- 세미콜론 생략
+                     -- 리턴 구문에서 타입의 크기를 지정하면x
+is
+
+begin
+
+    SQL구문
+    출력함수
+    조건문 , 반복문
+    
+    return 리턴값;   --세미콜론 사용
+end;
+/
+*/
+
+create or replace function cal_bonuss(vempno emp.empno%type)
+   return number  -- 리턴 구문에서 타입의 크기를 지정하면x
+is
+   vsal number(7,2);
+begin
+   select sal
+   into vsal
+   from emp
+   where empno = vempno;
+   
+   return vsal * 200;
+end;
+/
+
+variable var_res number;
+
+exec :var_res := cal_bonuss(7788); -- exec 뒤쪽에 바이드 변수를 선언해야한다.
+                                  -- 리턴값은 바인드 변수에 넣어 출력해야됨.
+print :var_res;
+
+drop procedure emp02_save;
+
+drop function cal_bonus;
+
+-- 커서 : 사용할 데이터의 위치를 가르킴 (select 구문이 실행하는 결과를 가리킨다.)
+/*
+declare 
+   cursor 커서명 is sql구문(select); -- 커서선언 => sql구문(select)을 가르킴
+begin
+   open 커서명;
+   loop
+      fetch 커서명 into 변수명; -- 테이블로부터 가져와서 변수에 저장하는 역할
+      exit when 커서명%notfound;
+    
+   end loop;
+   close 커서명;
+enl;
+/
+*/
+
+declare 
+   cursor c1 is select * from emp;
+   vemp emp%rowtype;
+begin
+   open c1;
+   loop
+      fetch c1 into vemp; -- 테이블로부터 가져와서 변수에 저장하는 역할
+      exit when c1%notfound;
+      
+      dbms_output.put_line(vemp.empno||' '||vemp.ename||' '||vemp.job||' '||
+      vemp.mgr||' '||vemp.hiredate||' '||vemp.sal||' '||vemp.comm||' '||vemp.deptno);
+   end loop;
+   close c1;
+end;
+/
+
+--for문 이용
+declare 
+   cursor c1 is select * from dept;
+   vdept dept%rowtype;
+begin
+   for vdept in c1 loop
+      exit when c1%notfound;
+      dbms_output.put_line(vdept.deptno||' '||vdept.dname||' '||vdept.loc);
+   end loop;
+end;
+/
+---------------------------------------------------------------------------------
+
+-- hr 계정에서 실행
+
+SELECT
+    * FROM departments;
+    
+아이디, 이름, 이름의 성, 부서이름
+
+-- employees, departments
+
+-- 조인방식
+select EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DEPARTMENT_NAME, e.DEPARTMENT_ID
+from employees e inner join departments d
+on e.DEPARTMENT_ID = d.DEPARTMENT_ID
+where e.DEPARTMENT_ID = 100;
+
+select count(*) from employees;
+select count(DEPARTMENT_ID) from employees;
+
+select * from employees
+where DEPARTMENT_ID is null;
+
+
+--서브쿼리
+select EMPLOYEE_ID, FIRST_NAME, LAST_NAME,DEPARTMENT_ID,(
+                                                    select DEPARTMENT_NAME
+                                                    from departments d
+                                                    where e.DEPARTMENT_ID =d.DEPARTMENT_ID
+                                                         ) as dep_names
+from employees e
+where e.DEPARTMENT_ID = 100;
+
+
+-- 프로시져(함수) => (매개변수와 리턴구문에서 스칼라 방식을 쓸 경우 타입의 크기를 주지않는다!)
+create or replace function get_dep_name(dept_id number)--매개 변수 지정 시 스칼라 방식을 쓸 경우 타입의 크기를 주지않음                                              
+   return varchar2 --리턴 구문에서 타입의 크기를 지정하지 않음
+is
+   sDepName varchar2(30); -- 부서 이름을 받을 수 있는 변수(스칼라 방식으로 일반적인 변수 설정 시 타입 크기 부여) 
+begin
+   select DEPARTMENT_NAME
+   into sDepName
+   from departments d
+   where DEPARTMENT_ID = dept_id;
+   
+   return sDepName;
+end;
+/
+
+variable var_depname varchar2(30);
+
+exec :var_depname := get_dep_name(100);
+
+print var_depname
+         
+select EMPLOYEE_ID, FIRST_NAME, LAST_NAME,get_dep_name(DEPARTMENT_ID) 
+from employees e                        --  └프로시져 함수를 쿼리문에 사용할 수 있다
+where e.DEPARTMENT_ID = 100;
+
+--Q
+-- employees, jobs
+-- 사원아이디, 이름, 성, 잡타이틀
+-- 조인,서브쿼리,프로시져함수(get_job_title()) 방식으로 조회
+
+-- 1. 조인 방식
+select EMPLOYEE_ID, FIRST_NAME, LAST_NAME, JOB_TITLE
+from employees e inner join jobs j
+on e.JOB_ID = j.JOB_ID
+order by EMPLOYEE_ID;
+
+-- 2. 서브쿼리 방식
+select EMPLOYEE_ID, FIRST_NAME, LAST_NAME, (
+                     select JOB_TITLE
+                     from jobs j
+                     where e.JOB_ID = j.JOB_ID
+                     ) as JOB_TITLE
+from employees e
+order by EMPLOYEE_ID;
+
+--3. 프로시져 함수 방식
+create or replace function get_job_title(jt_id jobs.JOB_ID%type)
+   return varchar2
+is
+   jt varchar2(50);
+begin
+   select JOB_TITLE
+   into jt
+   from jobs
+   where JOB_ID = jt_id;
+   
+   return jt;
+end;
+/
+
+variable job_t varchar2(50);
+
+exec :job_t := get_job_title('AD_VP');
+
+print job_t;
+
+select EMPLOYEE_ID, FIRST_NAME, LAST_NAME, get_job_title(JOB_ID)
+from employees e
+order by EMPLOYEE_ID;
+
+
+
+
+
+
+
+
+
